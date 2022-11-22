@@ -89,9 +89,9 @@ class YOLOX(SingleStageDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+
         # Multi-scale training
         img, gt_bboxes = self._preprocess(img, gt_bboxes)
-
         losses = super(YOLOX, self).forward_train(img, img_metas, gt_bboxes,
                                                   gt_labels, gt_bboxes_ignore)
 
