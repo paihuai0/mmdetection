@@ -22,22 +22,9 @@ from .custom import CustomDataset
 @DATASETS.register_module()
 class CocoDataset_datang(CustomDataset):
 
-    # CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-    #            'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
-    #            'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
-    #            'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
-    #            'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-    #            'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
-    #            'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
-    #            'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
-    #            'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
-    #            'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-    #            'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
-    #            'mouse', 'remote', 'keyboard', 'cell phone', 'microwave',
-    #            'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
-    #            'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
-    CLASSES = ('Car', 'Bus', 'Cyclist', 'Pedestrian', 'driverless_car', 'Truck',
-               'Tricyclist', 'Trafficcone')
+    CLASSES = ('Car', 'Bus', 'Cycling', 'Pedestrian', 'driverless_Car',
+               'Truck', 'Animal', 'Obstacle', 'Special_Target',
+               'Other_Objects', 'Unmanned_riding')
 
     PALETTE = [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230),
                (106, 0, 228), (0, 60, 100), (0, 80, 100), (0, 0, 70),
@@ -160,9 +147,15 @@ class CocoDataset_datang(CustomDataset):
         gt_labels = []
         gt_bboxes_ignore = []
         gt_masks_ann = []
-        gt_occs = [] # v1.1-1
-        occ_ignore_thre = [80, 80, 80, 80, 80, 80, 80, 80] # v1.1-1 and v1.1-2 set occ ignore threshold
+        gt_occs = []  # v1.1-1
+        gt_direct = []
 
+        # v1.1-1 and v1.1-2 set occ ignore threshold # noqa E501
+        # occ_ignore_thre = [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]
+        occ_ignore_thre = [5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+
+        direct_ignore_thre = [5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+        # occ_ignore_thre = [10, 10, 10, 10, 10, 10, 10, 10]
         for i, ann in enumerate(ann_info):
             if ann.get('ignore', False):
                 continue
@@ -176,33 +169,40 @@ class CocoDataset_datang(CustomDataset):
             if ann['category_id'] not in self.cat_ids:
                 continue
             bbox = [x1, y1, x1 + w, y1 + h]
-
             if ann.get('iscrowd', False):
                 gt_bboxes_ignore.append(bbox)
-            elif ann.get('occ',0) > occ_ignore_thre[int(ann['category_id'])]: #v1.1-2
+            elif ann.get('occ', 0) > occ_ignore_thre[int(
+                    ann['category_id'])]:  # v1.1-2 # noqa E501
                 gt_bboxes_ignore.append(bbox)
+            elif ann.get('direct', 0) > direct_ignore_thre[int(
+                    ann['category_id'])]:
+                gt_bboxes_ignore.append(bbox)
+
             else:
                 gt_bboxes.append(bbox)
                 gt_labels.append(self.cat2label[ann['category_id']])
                 gt_masks_ann.append(ann.get('segmentation', None))
                 # gt_occs.append(ann.get('occ', 10))  # debug v1.1-1
                 gt_occs.append(ann.get('occ', 0))  # use v1.1-1, default:0
+                gt_direct.append(ann.get('direct', 0))  # use v1.1-1, default:0
 
         if gt_bboxes:
             gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
             gt_labels = np.array(gt_labels, dtype=np.int64)
-            gt_occs = np.array(gt_occs,dtype=np.float32) # v1.1-1
+            gt_occs = np.array(gt_occs, dtype=np.float32)  # v1.1-1
+            gt_direct = np.array(gt_direct, dtype=np.float32)
         else:
             gt_bboxes = np.zeros((0, 4), dtype=np.float32)
             gt_labels = np.array([], dtype=np.int64)
-            gt_occs = np.array([], dtype=np.float32) # v1.1-1
+            gt_occs = np.array([], dtype=np.float32)  # v1.1-1
+            gt_direct = np.array([], dtype=np.float32)
 
         if gt_bboxes_ignore:
             gt_bboxes_ignore = np.array(gt_bboxes_ignore, dtype=np.float32)
         else:
             gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
 
-        seg_map = img_info['filename'].replace('jpg', 'png')
+        seg_map = img_info['filename'].rsplit('.', 1)[0] + self.seg_suffix
 
         ann = dict(
             bboxes=gt_bboxes,
@@ -210,8 +210,8 @@ class CocoDataset_datang(CustomDataset):
             bboxes_ignore=gt_bboxes_ignore,
             masks=gt_masks_ann,
             seg_map=seg_map,
-            occ = gt_occs  # v1.1-1
-        )
+            occ=gt_occs,  # v1.1-1
+            direct=gt_direct)
 
         return ann
 

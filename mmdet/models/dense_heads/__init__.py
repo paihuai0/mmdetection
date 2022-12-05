@@ -55,5 +55,5 @@ __all__ = [
     'DETRHead', 'YOLOFHead', 'DeformableDETRHead', 'SOLOHead',
     'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
-    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead','YOLOXHead_DT'
+    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead', 'YOLOXHead_DT'
 ]
