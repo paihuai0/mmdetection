@@ -15,20 +15,25 @@ DEBUG = True
 if os.environ.get('DEBUG', False):
     DEBUG = True
 batch_size = 1
-img_scale = (800, 800)  # height, width
-CLASSES = ('Car', 'Bus', 'Cycling', 'Pedestrian', 'driverless_Car', 'Truck',
-           'Animal', 'Obstacle', 'Special_Target', 'Other_Objects',
-           'Unmanned_riding')
-
-with_ignore = False
-with_occ = True
-with_direct = True
-skip_filter = False
+img_scale = (640, 640)  # height, width
+# CLASSES = ('Car', 'Bus', 'Cyclist', 'Pedestrian', 'driverless_car',
+#            'Truck', 'Tricyclist', 'Trafficcone')
+CLASSES = (
+        "Car",
+        "Bus",
+        "Cycling",
+        "Pedestrian",
+        "driverless_Car",
+        "Truck",
+        "Animal",
+        "Obstacle",
+        "Special_Target",
+        "Other_Objects",
+        "Unmanned_riding"
+)
 
 img_norm_cfg = dict(
-    mean=[0, 0, 0],
-    std=[255, 255, 255],
-)
+    mean=[0, 0, 0], std=[255, 255, 255], to_rgb=True)
 
 # model settings
 model = dict(
@@ -36,7 +41,8 @@ model = dict(
     input_size=img_scale,
     random_size_range=(15, 25),
     random_size_interval=10,
-    backbone=dict(type='CSPDarknet', deepen_factor=0.33, widen_factor=0.5),
+    backbone=dict(type='CSPDarknet', deepen_factor=0.33, widen_factor=0.5,
+                  ),#init_cfg=dict(type='Pretrained', checkpoint='/home/chenzhen/code/detection/mmdetection/checkpoint/best_bbox_mAP_epoch_299.pth'
     neck=dict(
         type='YOLOXPAFPN',
         in_channels=[128, 256, 512],
@@ -55,10 +61,10 @@ model = dict(
         'Linear',  # v1.1-1  current types: 'None','Linear',etc.
         occ_reg_weight_type=  # noqa E251
         'Linear',  # v1.1-1  current types: 'None','Linear',etc.
-        with_ignore=with_ignore,  # v1.1-2
+        with_ignore=True,  # v1.1-2
         bound_weight=[1.0, 2.0, 1.0, 1.0],  # up low left right v1.1-5
-        with_occ=with_occ,  # v1.1-6 linsong
-        with_direct=with_direct,
+        with_occ=True,  # v1.1-6 linsong
+        with_direct=True,
     ),
     # In order to align the source code, the threshold of the val phase is
     # 0.01, and the threshold of the test phase is 0.001.
@@ -71,59 +77,42 @@ model = dict(
 ########################### data loading pipeline 2022-10-08 ######################################### noqa E501,E266
 
 # dataset settings
-data_root = '/home/chenzhen/dt_code/mmdetection/data/coco_camera/'
+# data_root = '/home/chenzhen/code/detection/datasets/coco100/'  # noqa E501
+# data_root = '/home/chenzhen/code/detection/datasets/dt_imgdata/coco_dt15/'
+data_root = '/home/chenzhen/code/detection/datasets/dt_hangzhou/coco_dt_with_date_captured/'
 dataset_type = 'CocoDataset_datang'
 
 train_pipeline = [
     #################### TODO:ratio  v1.1-3 # noqa E266
-    dict(type='RoadPaste',
-         img_scale=img_scale,
-         pad_val=114,
-         center_ratio_range=(0.5, 1.5),
-         prob=0.5,
-         roadname='date_captured'),
-    dict(
-        type='Mosaic',
-        img_scale=img_scale,
-        pad_val=114.0,
-        center_ratio_range=(0.5, 1.5),
-        prob=0.5,
-        skip_filter=skip_filter,
-        with_ignore=with_ignore,
-        with_occ=with_occ,
-        with_direct=with_direct),
-    ##############
-    dict(
-        type='RandomAffine',
-        scaling_ratio_range=(0.1, 2),
-        border=(-img_scale[0] // 2, -img_scale[1] // 2),
-        skip_filter=skip_filter,
-        with_occ=with_occ,
-        with_direct=with_direct,
-    ),
-    ##############
+    # dict(type='RoadPaste', img_scale=img_scale, prob=0.5, roadname='date_captured'),
+    # dict(
+    #     type='Mosaic',
+    #     img_scale=img_scale,
+    #     pad_val=114.0,),
+    # #############
+    # dict(
+    #     type='RandomAffine',
+    #     scaling_ratio_range=(0.1, 2),
+    #     border=(-img_scale[0] // 2, -img_scale[1] // 2)),
     dict(type='YOLOXHSVRandomAug'),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Resize', img_scale=img_scale, keep_ratio=True),
-    dict(type='Normalize', **img_norm_cfg),
     dict(
         type='Pad',
         pad_to_square=True,
         # If the image is three-channel, the pad value needs
         # to be set separately for each channel.
         pad_val=dict(img=(114.0, 114.0, 114.0))),
+    dict(type='Normalize', **img_norm_cfg),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(5, 5),
          keep_empty=False),  # v1.1-1  v1.1-2
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
-        keys=[
-            'img', 'gt_bboxes', 'gt_labels', 'gt_bboxes_ignore', 'gt_occs',
-            'gt_direct'
-        ],
+        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_bboxes_ignore', 'gt_occs', 'gt_direct'],
         meta_keys=('filename', 'ori_filename', 'ori_shape', 'img_shape',
                    'pad_shape', 'scale_factor', 'flip', 'flip_direction',
-                   'img_norm_cfg'))  # v1.1-1  v1.1-2
+                   'img_norm_cfg', 'img'))  # v1.1-1  v1.1-2
 ]
 
 train_dataset = dict(
@@ -135,11 +124,7 @@ train_dataset = dict(
         img_prefix=data_root + 'train/',
         pipeline=[
             dict(type='LoadImageFromFile'),
-            dict(
-                type='LoadAnnotations',
-                with_bbox=True,
-                with_occ=True,
-                with_direct=True),
+            dict(type='LoadAnnotations', with_bbox=True, with_occ=True),
         ],
         filter_empty_gt=False,
     ),
@@ -154,11 +139,11 @@ test_pipeline = [
         transforms=[
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
             dict(
                 type='Pad',
                 pad_to_square=True,
                 pad_val=dict(img=(114.0, 114.0, 114.0))),
+            # dict(type='Normalize', **img_norm_cfg),
             dict(type='DefaultFormatBundle'),
             dict(type='Collect', keys=['img'])
         ])
@@ -166,7 +151,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=batch_size,
-    workers_per_gpu=0 if DEBUG else 4,
+    workers_per_gpu=0 if DEBUG else 2,
     persistent_workers=False if DEBUG else True,
     train=train_dataset,
     val=dict(
@@ -198,10 +183,10 @@ optimizer = dict(
     paramwise_cfg=dict(norm_decay_mult=0., bias_decay_mult=0.))
 optimizer_config = dict(grad_clip=None)
 
-max_epochs = 300
-num_last_epochs = 15
+max_epochs = 10
+num_last_epochs = 5
 # resume_from = None
-interval = 999  # debug: 999  use: 1 or 2  (save checkpoint, eval checkpoint)
+interval = 5  # debug: 999  use: 1 or 2  (save checkpoint, eval checkpoint)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 load_from = None
@@ -216,7 +201,7 @@ lr_config = dict(
     by_epoch=False,
     warmup_by_epoch=True,
     warmup_ratio=1,
-    warmup_iters=5,  # 5 epoch
+    warmup_iters=1,  # 5 epoch
     num_last_epochs=num_last_epochs,
     min_lr_ratio=0.05)
 
@@ -237,7 +222,11 @@ custom_hooks = [
         type='ExpMomentumEMAHook',
         resume_from=resume_from,
         momentum=0.0001,
-        priority=49)
+        priority=49),
+    dict(
+        type='SimOTAVisualizeHook',
+
+    )
 ]
 checkpoint_config = dict(interval=interval)
 evaluation = dict(

@@ -2,8 +2,17 @@ from argparse import ArgumentParser
 
 import mmcv
 
+
 from mmdet import datasets
 from mmdet.core import eval_map
+
+
+'''
+commnd:
+
+python tools/voc_eval.py results.pkl  work_dirs/faster_rcnn_r50_fpn_1x_coco.py 
+
+'''
 
 
 def voc_eval(result_file, dataset, iou_thr=0.5, nproc=4):
@@ -30,7 +39,7 @@ def main():
     parser.add_argument(
         '--iou-thr',
         type=float,
-        default=0.75,
+        default=0.5,
         help='IoU threshold for evaluation')
     parser.add_argument(
         '--nproc',
@@ -40,11 +49,9 @@ def main():
     args = parser.parse_args()
     cfg = mmcv.Config.fromfile(args.config)
     test_dataset = mmcv.runner.obj_from_dict(cfg.data.test, datasets)
+    print(test_dataset)
     voc_eval(args.result, test_dataset, args.iou_thr, args.nproc)
 
 
 if __name__ == '__main__':
-    '''command:
-    python tools/voc_eval.py results.pkl  work_dirs/faster_rcnn_r50_fpn_1x_coco.py # noqa E501
-    '''
     main()
