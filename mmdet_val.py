@@ -1,26 +1,27 @@
-import matplotlib
 import math
-matplotlib.use('TkAgg')
+from mmcv.utils import print_log
+import matplotlib
 import mmcv
-from mmdet.core import eval_map
 import numpy as np
+import torch.nn as nn
 from mmcv import Config
 from mmcv.ops import nms
-import torch.nn as nn
-from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
+from terminaltables import AsciiTable
+from mmdet.core import eval_map
 from mmdet.core.evaluation.bbox_area import bbox_area
+from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets import build_dataset
 from mmdet.utils import replace_cfg_vals, update_data_root
+
 pair = nn.PairwiseDistance(p=2)
 
 
-#tp_confusion_matrix
 def calculate_num_confusion_matrix(dataset,
-                               results,
-                               score_thr=0.3,
-                               nms_iou_thr=None,
-                               area_size=None,
-                               tp_iou_thr=0.5):
+                                   results,
+                                   score_thr=0.3,
+                                   nms_iou_thr=None,
+                                   area_size=None,
+                                   tp_iou_thr=0.5):
     num_classes = len(dataset.CLASSES)
     confusion_matrix = np.zeros(shape=[num_classes + 1, num_classes + 1])
     assert len(dataset) == len(results)
@@ -33,12 +34,13 @@ def calculate_num_confusion_matrix(dataset,
         ann = dataset.get_ann_info(idx)
         gt_bboxes = ann['bboxes']
         labels = ann['labels']
-        num_analyze_per_img_dets(confusion_matrix, gt_bboxes, labels, res_bboxes,
-                                 score_thr, tp_iou_thr, nms_iou_thr, area_size)
+        num_analyze_per_img_dets(confusion_matrix, gt_bboxes, labels,
+                                 res_bboxes, score_thr, tp_iou_thr,
+                                 nms_iou_thr, area_size)
         prog_bar.update()
     return confusion_matrix
 
-#dis_loss_confusion_matrix
+
 def calculate_dis_confusion_matrix(dataset,
                                    results,
                                    score_thr=0.3,
@@ -55,18 +57,19 @@ def calculate_dis_confusion_matrix(dataset,
         ann = dataset.get_ann_info(idx)
         gt_bboxes = ann['bboxes']
         labels = ann['labels']
-        dis_analyze_per_img_dets(result_matrix, gt_bboxes, labels, res_bboxes, score_thr, tp_iou_thr)
+        dis_analyze_per_img_dets(result_matrix, gt_bboxes, labels, res_bboxes,
+                                 score_thr, tp_iou_thr,)
         prog_bar.update()
     return result_matrix
 
-#show_ap_map
-def voc_eval(result,
-             dataset,
-             iou_thr=0.5,
-             nproc=4):
+
+def voc_eval(result, dataset, iou_thr=0.5, nproc=4):
     annotations = [dataset.get_ann_info(i) for i in range(len(dataset))]
-    dataset_name = dataset.CLASSES
-    eval_map(
+    if hasattr(dataset, 'year') and dataset.year == 2007:
+        dataset_name = 'voc07'
+    else:
+        dataset_name = dataset.CLASSES
+    _, eval_results = eval_map(
         result,
         annotations,
         scale_ranges=None,
@@ -74,14 +77,16 @@ def voc_eval(result,
         dataset=dataset_name,
         logger='print',
         nproc=nproc)
+    return eval_results
 
-#cal_per_img_dets_dis_loss
-def dis_analyze_per_img_dets(result_matrix,
-                             gt_bboxes,
-                             gt_labels,
-                             result,
-                             score_thr=0.3,
-                             tp_iou_thr=0.5,):
+def dis_analyze_per_img_dets(
+    result_matrix,
+    gt_bboxes,
+    gt_labels,
+    result,
+    score_thr=0.3,
+    tp_iou_thr=0.5,
+):
     for det_label, det_bboxes in enumerate(result):
         ious = bbox_overlaps(det_bboxes[:, :4], gt_bboxes)
         for i, det_bbox in enumerate(det_bboxes):
@@ -89,19 +94,23 @@ def dis_analyze_per_img_dets(result_matrix,
             if score >= score_thr:
                 for j, gt_label in enumerate(gt_labels):
                     if ious[i, j] >= tp_iou_thr and gt_label == det_label:
-                        det_point_y = det_bbox[1] + ((det_bbox[3] - det_bbox[1]) / 2)
+                        det_point_y = det_bbox[1] + (
+                            (det_bbox[3] - det_bbox[1]) / 2)
                         det_point_x = det_bbox[2]
 
-                        gt_point_y = gt_bboxes[j][1] + ((gt_bboxes[j][3] - gt_bboxes[j][1]) / 2)
+                        gt_point_y = gt_bboxes[j][1] + (
+                            (gt_bboxes[j][3] - gt_bboxes[j][1]) / 2)
                         gt_point_x = gt_bboxes[j][2]
 
-                        point_val_result = math.sqrt(
-                            ((gt_point_x - det_point_x) ** 2) + ((gt_point_y - det_point_y) ** 2))
+                        point_val_result = math.sqrt((
+                            (gt_point_x - det_point_x)**2) + (
+                                (gt_point_y - det_point_y)**2))
                         line_val_result = gt_bboxes[j][2] - det_bbox[2]
 
                         result_matrix[gt_label, 0] += abs(point_val_result)
                         result_matrix[gt_label, 1] += abs(line_val_result)
-#cal_per_img_dets_
+
+
 def num_analyze_per_img_dets(confusion_matrix,
                              gt_bboxes,
                              gt_labels,
@@ -111,7 +120,8 @@ def num_analyze_per_img_dets(confusion_matrix,
                              nms_iou_thr=None,
                              area_size=None):
     if area_size:
-        area_gt = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (gt_bboxes[:, 3] - gt_bboxes[:, 1])
+        area_gt = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
+            gt_bboxes[:, 3] - gt_bboxes[:, 1])
         mask = (area_gt > area_size[0]) & (area_gt <= area_size[1])
         gt_bboxes = gt_bboxes[mask]
         gt_labels = gt_labels[mask]
@@ -142,13 +152,15 @@ def num_analyze_per_img_dets(confusion_matrix,
         if num_tp == 0:  # FN
             confusion_matrix[gt_label, -1] += 1
 
+
 def main():
     area_size = None
     score_thr = 0.3
     tp_iou_thr = 0.5
     exp = 1e-7
-    prediction_path = "/home/chenzhen/code/detection/mmdetection/result/800-class-weight.pkl"
-    config = "/home/chenzhen/code/detection/mmdetection/result/yolox_s_temp.py"
+    root = '/home/chenzhen/code/detection/mmdetection/'
+    prediction_path = root + 'result/800-class-weight.pkl'
+    config = root + 'configs/datang_detection/yolox_s_temp.py'
     cfg = Config.fromfile(config)
     cfg = replace_cfg_vals(cfg)
     update_data_root(cfg)
@@ -167,42 +179,66 @@ def main():
             ds_cfg.test_mode = True
     dataset = build_dataset(cfg.data.test)
     dataset_name = list(dataset.CLASSES)
-    print('\n----------------datasets-------------------\n')
-    print(dataset)
-    #1 cal tp fp
-    TP_confusion_matrix = calculate_num_confusion_matrix(dataset, results,
-                                                         score_thr=score_thr,
-                                                         nms_iou_thr=None,
-                                                         tp_iou_thr=tp_iou_thr,
-                                                         area_size=area_size)
+    # print('\n----------------datasets-------------------\n')
+    # print(dataset)
+
+    print('\n------------cal_val-----------------------\n')
+    # 1.map
+    eval_results = voc_eval(results, dataset, tp_iou_thr, 4)
+    num_gts = np.zeros((1, len(dataset_name)), dtype=int)
+    for i, cls_result in enumerate(eval_results):
+        num_gts[:, i] = cls_result['num_gts']
+
+    # 2. cal tp fp
+    TP_confusion_matrix = calculate_num_confusion_matrix(
+        dataset,
+        results,
+        score_thr=score_thr,
+        nms_iou_thr=0.6,
+        tp_iou_thr=tp_iou_thr,
+        area_size=area_size)
     np.set_printoptions(precision=4, suppress=True)
     tp = TP_confusion_matrix.diagonal()
     fp = TP_confusion_matrix.sum(0) - tp  # false positives
-    fn = TP_confusion_matrix[:, -1]  # false negatives (missed detections)
+    pure_fp = TP_confusion_matrix[-1, :]
+    confusion_fp = fp - pure_fp
+    # fn = TP_confusion_matrix[:, -1]  # false negatives (missed detections)
+    fn = num_gts[0] - tp[:-1]
     print('\n----------------cal_tp_fp_fn-------------------\n')
 
+    header1 = ['class', 'tp', 'pure_fp', 'conf_fp', 'fn']
+    table_data1 = [header1]
     for i in range(len(dataset_name)):
-        print('{}: tp:{}     |     fp:{}     |     fn:{}'.format(dataset_name[i], tp[i], fp[i], fn[i]))
-    #2 cal dis loss
-    DIS_confusion_matrix = calculate_dis_confusion_matrix(dataset, results,
-                                                          score_thr=score_thr,
-                                                          tp_iou_thr=tp_iou_thr)
+        row_data1 = [
+            dataset_name[i], tp[i], pure_fp[i], confusion_fp[i], fn[i]
+        ]
+        table_data1.append(row_data1)
+    table1 = AsciiTable(table_data1)
+    print_log('\n' + table1.table)
+
+    # 3. cal dis loss
+    DIS_confusion_matrix = calculate_dis_confusion_matrix(
+        dataset, results, score_thr=score_thr, tp_iou_thr=tp_iou_thr)
     np.set_printoptions(precision=4, suppress=True)
 
     print('\n-------------cal_point_line----------------------\n')
-    point_result_normal = list(map(lambda x: x[0]/(x[1]+exp), zip(list(DIS_confusion_matrix[:, 0]), tp)))
-    line_result_normal = list(map(lambda x: x[0]/(x[1]+exp), zip(list(DIS_confusion_matrix[:, 1]), tp)))
+    point_result_normal = list(
+        map(lambda x: x[0] / (x[1] + exp),
+            zip(list(DIS_confusion_matrix[:, 0]), tp)))
+    line_result_normal = list(
+        map(lambda x: x[0] / (x[1] + exp),
+            zip(list(DIS_confusion_matrix[:, 1]), tp)))
 
-    print('\n-------------point_result_normal----------------------\n')
+    header2 = ['class', 'point_result_normal', 'line_result_normal']
+    table_data2 = [header2]
     for i in range(len(dataset_name)):
-        print('{} : {}'.format(dataset_name[i], point_result_normal[i]))
-    print('\n-------------line_result_normal----------------------\n')
-    for i in range(len(dataset_name)):
-        print('{} : {}'.format(dataset_name[i], line_result_normal[i]))
+        row_data2 = [
+            dataset_name[i], f'{point_result_normal[i]:.3f}', f'{line_result_normal[i]:.3f}'
+        ]
+        table_data2.append(row_data2)
+    table2 = AsciiTable(table_data2)
+    print_log('\n' + table2.table)
 
-    print('\n------------cal_val-----------------------\n')
-    #3.map
-    voc_eval(results, dataset, tp_iou_thr, 4)
 
 
 if __name__ == '__main__':
