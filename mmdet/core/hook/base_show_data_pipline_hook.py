@@ -6,16 +6,14 @@ import matplotlib.pyplot as plt
 from mmcv.runner.hooks import HOOKS, Hook
 from mmcv.fileio import FileClient
 from mmcv.visualization import  color_val
+import os.path as osp
 
-
-save = False
+save = True
 img_norm_cfg = dict(mean=[0, 0, 0], std=[1, 1, 1])
-
 
 
 @HOOKS.register_module()
 class BaseShowDataPipline(Hook):
-
 
     def before_run(self, runner):
         runner.logger.info(f'BaseShowDataPipline will be runing!!')
@@ -31,11 +29,10 @@ class BaseShowDataPipline(Hook):
     def before_train_epoch(self, runner):
         train_loader = runner.data_loader
         for i, data_batch in enumerate(train_loader):
-            # print(list(data_batch.keys()))
             img_batch = data_batch['img']._data[0]
             # gt_label = data_batch['gt_labels']._data[0]
             gt_bbox = data_batch['gt_bboxes']._data[0]
-
+            image_name = osp.splitext(data_batch['img_metas']._data[0][1]['ori_filename'])[0]
             for batch_i in range(len(img_batch)):
                 img = img_batch[batch_i]
                 # labels = gt_label[batch_i].numpy()
@@ -83,6 +80,9 @@ class BaseShowDataPipline(Hook):
             #     label_text += f'|{bbox[-1]: .02f}'
             # cv2.putText(img, label_text, (bbox_int[0], bbox_int[1] - 2),
             #             cv2.FONT_HERSHEY_COMPLEX, font_scale, text_color)
-            plt.imshow(img)
-            plt.show()
+            if save:
+                cv2.imwrite(osp.join(self.out_dir, image_name + ".jpg"), img)
+            else:
+                plt.imshow(img)
+                plt.show()
 
