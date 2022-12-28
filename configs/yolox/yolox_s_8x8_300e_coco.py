@@ -26,16 +26,16 @@ data_root = '/home/chenzhen/code/detection/datasets/coco100/'
 dataset_type = 'CocoDataset'
 
 train_pipeline = [
-    # dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
-    # dict(
-    #     type='RandomAffine',
-    #     scaling_ratio_range=(0.1, 2),
-    #     border=(-img_scale[0] // 2, -img_scale[1] // 2)),
-    # dict(
-    #     type='MixUp',
-    #     img_scale=img_scale,
-    #     ratio_range=(0.8, 1.6),
-    #     pad_val=114.0),
+    dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
+    dict(
+        type='RandomAffine',
+        scaling_ratio_range=(0.1, 2),
+        border=(-img_scale[0] // 2, -img_scale[1] // 2)),
+    dict(
+        type='MixUp',
+        img_scale=img_scale,
+        ratio_range=(0.8, 1.6),
+        pad_val=114.0),
     dict(type='YOLOXHSVRandomAug'),
     dict(type='RandomFlip', flip_ratio=0.5),
     # According to the official implementation, multi-scale
@@ -50,7 +50,8 @@ train_pipeline = [
         pad_val=dict(img=(114.0, 114.0, 114.0))),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
+         meta_keys=('filename', 'img'))
 ]
 
 train_dataset = dict(
@@ -86,7 +87,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=2,
     workers_per_gpu=1,
     persistent_workers=True,
     train=train_dataset,
@@ -115,7 +116,7 @@ optimizer_config = dict(grad_clip=None)
 max_epochs = 300
 num_last_epochs = 15
 resume_from = None
-interval = 1
+interval = 10
 
 # learning policy
 lr_config = dict(
@@ -147,7 +148,10 @@ custom_hooks = [
         momentum=0.0001,
         priority=49),
     dict(
-        type='SimOTAVisualizeHook',
+        type="SimOTAVisualizeHook",
+    ),
+    dict(
+        type='BaseShowDataPipline',
     )
 ]
 checkpoint_config = dict(interval=interval)
@@ -160,7 +164,6 @@ evaluation = dict(
     interval=interval,
     dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
     metric='bbox')
-
 log_config = dict(interval=50)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,

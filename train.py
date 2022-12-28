@@ -21,7 +21,7 @@ from mmdet.utils import (collect_env, get_device, get_root_logger,
                          replace_cfg_vals, setup_multi_processes,
                          update_data_root)
 
-config = '/home/chenzhen/code/detection/mmdetection/configs/datang_detection/yolox_s_8x8_300e_coco.py'
+config = '/home/chenzhen/code/my_github_code/mmdetection/configs/datang_detection/yolox_s_8x8_300e_coco.py'
 # config = "/home/chenzhen/code/detection/mmdetection/configs/atss/atss_r50_fpn_1x_coco.py"
 
 def parse_args():

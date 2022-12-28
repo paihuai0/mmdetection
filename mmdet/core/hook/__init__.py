@@ -11,11 +11,12 @@ from .yolox_mode_switch_hook import YOLOXModeSwitchHook
 from .yolox_simOTA_vis_hook import YOLOXSimOTAVisualizeHook
 from .base_label_assignment_vis_hook import BaseLabelAssignmentVisHook
 from .base_simOTA_vis_hook import SimOTAVisualizeHook
+from .base_show_data_pipline_hook import BaseShowDataPipline
 
 __all__ = [
     'SyncRandomSizeHook', 'YOLOXModeSwitchHook', 'SyncNormHook',
     'ExpMomentumEMAHook', 'LinearMomentumEMAHook', 'YOLOXLrUpdaterHook',
     'CheckInvalidLossHook', 'SetEpochInfoHook', 'MemoryProfilerHook',
     'MMDetWandbHook', 'BaseLabelAssignmentVisHook', 'YOLOXSimOTAVisualizeHook',
-    'SimOTAVisualizeHook'
+    'SimOTAVisualizeHook','BaseShowDataPipline'
 ]

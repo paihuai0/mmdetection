@@ -1,12 +1,6 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
-import os
-
-DEBUG = True
-if os.environ.get('DEBUG', False):
-    DEBUG = True
 img_scale = (640, 640)  # height, width
-batch_size = 1
 CLASSES = (
         "Car",
         "Bus",
@@ -107,9 +101,9 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=batch_size,
-    workers_per_gpu=0 if DEBUG else 2,
-    persistent_workers=False if DEBUG else True,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
+    persistent_workers=True,
     train=train_dataset,
     val=dict(
         type=dataset_type,
@@ -138,7 +132,7 @@ optimizer_config = dict(grad_clip=None)
 max_epochs = 300
 num_last_epochs = 15
 resume_from = None
-interval = 5
+interval = 1
 
 # learning policy
 lr_config = dict(
@@ -170,7 +164,10 @@ custom_hooks = [
         momentum=0.0001,
         priority=49),
     dict(
-        type='SimOTAVisualizeHook',
+        type="SimOTAVisualizeHook",
+    ),
+    dict(
+        type='BaseShowDataPipline',
     )
 ]
 checkpoint_config = dict(interval=interval)

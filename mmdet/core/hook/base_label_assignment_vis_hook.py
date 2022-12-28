@@ -31,7 +31,7 @@ class UnNormalize:
             # The normalize code -> t.sub_(m).div_(s)
         return tensor
 
-unorm = UnNormalize(mean=[110.57, 108.64, 110.80], std=[34.30, 35.06, 35.32])
+unorm = UnNormalize(mean=[0, 0, 0], std=[1, 1, 1])
 
 class Colors:
     # Ultralytics color palette https://ultralytics.com/
