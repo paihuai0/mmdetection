@@ -33,12 +33,12 @@ class BaseShowDataPipline(Hook):
         for i, data_batch in enumerate(train_loader):
             # print(list(data_batch.keys()))
             img_batch = data_batch['img']._data[0]
-            gt_label = data_batch['gt_labels']._data[0]
+            # gt_label = data_batch['gt_labels']._data[0]
             gt_bbox = data_batch['gt_bboxes']._data[0]
 
             for batch_i in range(len(img_batch)):
                 img = img_batch[batch_i]
-                labels = gt_label[batch_i].numpy()
+                # labels = gt_label[batch_i].numpy()
                 bboxes = gt_bbox[batch_i].numpy()
                 mean_value = np.array(img_norm_cfg['mean'])
                 std_value = np.array(img_norm_cfg['std'])
@@ -49,15 +49,15 @@ class BaseShowDataPipline(Hook):
                 # 参考mmcv.imshow_bboxes
 
                 assert bboxes.ndim == 2
-                assert labels.ndim == 1
-                assert bboxes.shape[0] == labels.shape[0]
+                # assert labels.ndim == 1
+                # assert bboxes.shape[0] == labels.shape[0]
                 assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5
                 # colors = ['green', 'red', 'blue', 'cyan', 'yellow', 'magenta', 'white', 'black']
-                class_names = None
+                # class_names = None
                 score_thr = 0
                 bbox_color = 'green'
-                text_color = 'green'
-                font_scale = 1
+                # text_color = 'green'
+                # font_scale = 1
                 thickness = 3
                 img = np.ascontiguousarray(img_numpy_uint8)
                 if score_thr > 0:
@@ -65,23 +65,24 @@ class BaseShowDataPipline(Hook):
                     scores = bboxes[:, -1]
                     inds = scores > score_thr
                     bboxes = bboxes[inds, :]
-                    labels = labels[inds]
+                    # labels = labels[inds]
 
                 bbox_color = color_val(bbox_color)
-                text_color = color_val(text_color)
+                # text_color = color_val(text_color)
 
-                for bbox, label in zip(bboxes, labels):
+                # for bbox, label in zip(bboxes, labels):
+                for bbox in bboxes:
                     bbox_int = bbox.astype(np.int32)
                     left_top = (bbox_int[0], bbox_int[1])
                     right_bottom = (bbox_int[2], bbox_int[3])
                     cv2.rectangle(
                         img, left_top, right_bottom, bbox_color, thickness=thickness)
-                    label_text = class_names[
-                        label] if class_names is not None else f'cls {label}'
-            if len(bbox) > 4:
-                label_text += f'|{bbox[-1]: .02f}'
-            cv2.putText(img, label_text, (bbox_int[0], bbox_int[1] - 2),
-                        cv2.FONT_HERSHEY_COMPLEX, font_scale, text_color)
+                    # label_text = class_names[
+                    #     label] if class_names is not None else f'cls {label}'
+            # if len(bbox) > 4:
+            #     label_text += f'|{bbox[-1]: .02f}'
+            # cv2.putText(img, label_text, (bbox_int[0], bbox_int[1] - 2),
+            #             cv2.FONT_HERSHEY_COMPLEX, font_scale, text_color)
             plt.imshow(img)
             plt.show()
 
