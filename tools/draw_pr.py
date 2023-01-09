@@ -1,10 +1,3 @@
-# =========================================================
-# @purpose: plot PR curve by COCO API and mmdet API
-# @date：   2020/12
-# @version: v1.0
-# @author： Xu Huasheng
-# @github： https://github.com/xuhuasheng/mmdetection_plot_pr_curve
-# =========================================================
 
 import os
 import mmcv
@@ -16,9 +9,6 @@ from pycocotools.cocoeval import COCOeval
 
 from mmcv import Config
 from mmdet.datasets import build_dataset
-
-# MODEL = "cascade_rcnn"
-# MODEL_NAME = "cascade_rcnn_r50_fpn_1x_coco"
 
 CONFIG_FILE = "/home/chenzhen/code/detection/mmdetection/result/yolox_s_temp.py"
 RESULT_FILE = "/home/chenzhen/code/detection/mmdetection/result/2399_results.pkl"

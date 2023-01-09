@@ -122,7 +122,7 @@ class ConcatDataset(_ConcatDataset):
 
                 results_per_dataset = results[start_idx:end_idx]
                 print_log(
-                    f'\nEvaluating {dataset.ann_file} with '
+                    f'\nEvaluateing {dataset.ann_file} with '
                     f'{len(results_per_dataset)} images now',
                     logger=logger)
 

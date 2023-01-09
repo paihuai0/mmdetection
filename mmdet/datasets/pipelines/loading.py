@@ -225,40 +225,22 @@ class LoadAnnotations:
             Defaults to ``dict(backend='disk')``.
     """
 
-    def __init__(
-        self,
-        with_bbox=True,
-        with_label=True,
-        with_mask=False,
-        with_seg=False,
-        poly2mask=True,
-        denorm_bbox=False,
-        with_occ=False,  # v1.1-1 # v1.1-6
-        with_direct=False,
-        file_client_args=dict(backend='disk')):  # noqa E125
+    def __init__(self,
+                 with_bbox=True,
+                 with_label=True,
+                 with_mask=False,
+                 with_seg=False,
+                 poly2mask=True,
+                 denorm_bbox=False,
+                 file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
-        self.with_occ = with_occ # v1.1-6
-        self.with_direct = with_direct
         self.poly2mask = poly2mask
         self.denorm_bbox = denorm_bbox
         self.file_client_args = file_client_args.copy()
         self.file_client = None
-
-    def _load_occlusion(self, results): # v1.1-6
-        """Private function to load occlusion annotations. v1.1-1
-        Args:
-            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
-        Returns:
-            dict: The dict contains loaded occlusion annotations.
-        """
-        ann_info = results['ann_info']
-        results['gt_occs'] = ann_info['occ'].copy()
-        results['gt_direct'] = ann_info['direct'].copy()
-        return results
 
     def _load_bboxes(self, results):
         """Private function to load bounding box annotations.
@@ -416,18 +398,12 @@ class LoadAnnotations:
             results = self._load_masks(results)
         if self.with_seg:
             results = self._load_semantic_seg(results)
-        if self.with_occ: # v1.1-6
-            results = self._load_occlusion(results)
-        if self.with_direct:  # v1.1-6
-            results = self._load_occlusion(results)
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(with_bbox={self.with_bbox}, '
         repr_str += f'with_label={self.with_label}, '
-        repr_str += f'with_occ={self.with_occ}, ' # v1.1-6
-        repr_str += f'with_direct={self.with_direct}, '  # v1.1-6
         repr_str += f'with_mask={self.with_mask}, '
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
@@ -650,8 +626,8 @@ class FilterAnnotations:
             keep = keep & t
 
         keep = keep.nonzero()[0]
-        #  v1.1-1
-        keys = ('gt_bboxes', 'gt_labels', 'gt_masks', ) # v1.1-6
+
+        keys = ('gt_bboxes', 'gt_labels', 'gt_masks')
         for key in keys:
             if key in results:
                 results[key] = results[key][keep]

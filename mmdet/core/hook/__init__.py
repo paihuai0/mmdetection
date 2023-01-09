@@ -17,6 +17,6 @@ __all__ = [
     'SyncRandomSizeHook', 'YOLOXModeSwitchHook', 'SyncNormHook',
     'ExpMomentumEMAHook', 'LinearMomentumEMAHook', 'YOLOXLrUpdaterHook',
     'CheckInvalidLossHook', 'SetEpochInfoHook', 'MemoryProfilerHook',
-    'MMDetWandbHook', 'BaseLabelAssignmentVisHook', 'YOLOXSimOTAVisualizeHook',
+    'MMDetWandbHook','YOLOXSimOTAVisualizeHook',
     'SimOTAVisualizeHook','BaseShowDataPipline'
 ]

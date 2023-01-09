@@ -8,11 +8,11 @@ from tqdm import trange
 from mmdet.apis import inference_detector, init_detector
 from pycocotools.coco import COCO
 
-img_path = Path('/home/chenzhen/code/detection/datasets/dair-and-dthangzhou-sub100/train')
+img_path = Path('/home/chenzhen/code/detection/datasets/dt_imgdata/coco_dt/val')
 config_path = Path('/home/chenzhen/code/detection/mmdetection/configs/datang_detection/yolox_s_temp.py')
 checkpoint = Path('/home/chenzhen/code/detection/mmdetection/checkpoint/800-v1.0-model.pth')
-anno_path = Path('/home/chenzhen/code/detection/datasets/dair-and-dthangzhou-sub100/annotations/train.json')
-draw_path = Path('/home/chenzhen/code/detection/datasets/dair-and-dthangzhou-sub100/draw')
+anno_path = Path('/home/chenzhen/code/detection/datasets/dt_imgdata/coco_dt/annotations/val.json')
+draw_path = Path('/home/chenzhen/code/detection/datasets/dt_imgdata/v1.0-Pedestrian-imgs')
 draw_path.mkdir(parents=True, exist_ok=True)
 
 CLASSES = (
@@ -38,16 +38,37 @@ orange = orange[::-1]
 
 
 def box_iou(box1, box2, eps=1e-7):
-    box1 = box1[:, :4]
-    box2 = box2[:, :4]
-    a1, a2 = np.hsplit(box1, 2)
-    a1, a2 = np.expand_dims(a1, 1), np.expand_dims(a2, 1)
-    b1, b2 = np.hsplit(box2, 2)
-    b1, b2 = np.expand_dims(b1, 0), np.expand_dims(b2, 0),
+    # box1 = box1[:4]
+    # box2 = box2[:, :4]
+    # a1, a2 = np.hsplit(box1, 2)
+    # a1, a2 = np.expand_dims(a1, 1), np.expand_dims(a2, 1)
+    # b1, b2 = np.hsplit(box2, 2)
+    # b1, b2 = np.expand_dims(b1, 0), np.expand_dims(b2, 0),
+    #
+    # inter = (np.minimum(a2, b2) - np.maximum(a1, b1)).clip(0).prod(2)
+    # iou = inter / ((a2 - a1).prod(2) + (b2 - b1).prod(2) - inter + eps)
+    # return iou
 
-    inter = (np.minimum(a2, b2) - np.maximum(a1, b1)).clip(0).prod(2)
-    iou = inter / ((a2 - a1).prod(2) + (b2 - b1).prod(2) - inter + eps)
-    return iou
+    bboxes1 = box1.astype(np.float32)
+    bboxes2 = box2.astype(np.float32)
+    cols = bboxes2.shape[0]
+    ious = np.zeros((1, cols), dtype=np.float32)
+
+    area1 = (bboxes1[2] - bboxes1[0] + eps) * (
+            bboxes1[3] - bboxes1[1] + eps)
+    area2 = (bboxes2[:, 2] - bboxes2[:, 0] + eps) * (
+            bboxes2[:, 3] - bboxes2[:, 1] + eps)
+    for i in range(bboxes2.shape[0]):
+        x_start = np.maximum(bboxes2[i, 0], bboxes1[0])
+        y_start = np.maximum(bboxes2[i, 1], bboxes1[1])
+        x_end = np.minimum(bboxes2[i, 2], bboxes1[2])
+        y_end = np.minimum(bboxes2[i, 3], bboxes1[3])
+        overlap = np.maximum(x_end - x_start + eps, 0) * np.maximum(
+            y_end - y_start + eps, 0)
+        union = area2[i] + area1 - overlap
+        union = np.maximum(union, eps)
+        ious = overlap / union
+    return ious
 
 
 def draw(image, bbox, name, color, xywh=True):
@@ -101,12 +122,16 @@ def main():
             cv2.imwrite(str(draw_path / image_data['file_name']), img)
         else:
             others = np.concatenate(result)
-            ious = box_iou(person, others)
-            person_id, other_id = np.where(ious >= 0.3)
+            ious = box_iou(np.array(bbox), others)
+            other_id = np.where(ious >= 0.3)
             for *bbox, s in person:
                 img = draw(img, bbox, f'Pedestrian_{s:.3f}', blue, xywh=False)
-            for *bbox, c in others[other_id, :]:
-                img = draw(img, bbox, category_names[int(c)], orange, xywh=False)
+            try:
+                for *bbox, c in others[other_id, :]:
+                    img = draw(img, bbox, category_names[int(c)], orange, xywh=False)
+            except:
+                pass
+
             cv2.imwrite(str(draw_path / image_data['file_name']), img)
 
 

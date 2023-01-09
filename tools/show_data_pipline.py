@@ -13,7 +13,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-cfg = Config.fromfile('/home/chenzhen/code/detection/mmdetection/configs/datang_detection/yolox_s_8x8_300e_coco.py')
+cfg = Config.fromfile('/home/chenzhen/dt_code/mmdetection/configs/datang_detection/yolox_s_temp.py')
 # print(cfg)
 # cfg.gpu_ids = [0]
 cfg.gpu_ids = range(0, 1)

@@ -79,7 +79,7 @@ model = dict(
 # dataset settings
 # data_root = '/home/chenzhen/code/detection/datasets/coco100/'  # noqa E501
 # data_root = '/home/chenzhen/code/detection/datasets/dt_imgdata/coco_dt15/'
-data_root = '/home/chenzhen/code/detection/datasets/dt_hangzhou/coco_dt_with_date_captured/'
+data_root ='/home/chenzhen/code/detection/datasets/dt_hangzhou/coco_dt_50/'
 dataset_type = 'CocoDataset_datang'
 
 train_pipeline = [
@@ -223,10 +223,6 @@ custom_hooks = [
         resume_from=resume_from,
         momentum=0.0001,
         priority=49),
-    dict(
-        type='SimOTAVisualizeHook',
-
-    )
 ]
 checkpoint_config = dict(interval=interval)
 evaluation = dict(

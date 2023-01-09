@@ -10,7 +10,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-cfg = Config.fromfile('/home/chenzhen/code/detection/mmdetection/configs/datang_detection/yolox_s_8x8_300e_coco.py')
+cfg = Config.fromfile('/home/chenzhen/code/detection/mmdetection/configs/datang_detection/yolox_s_temp.py')
 # print(cfg)
 # cfg.gpu_ids = [0]
 cfg.gpu_ids = range(0, 1)
@@ -34,7 +34,7 @@ print('build_dataloader finished')
 
 for i, data_batch in enumerate(data_loader):
     # print(list(data_batch.keys()))
-    # print(i)
+    print(i)
     img_batch = data_batch['img']._data[0]
     # print(img_batch._data)
     gt_label = data_batch['gt_labels']._data[0]

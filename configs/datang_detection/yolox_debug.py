@@ -1,9 +1,14 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
+import os
+
+DEBUG = True
+if os.environ.get('DEBUG', False):
+    DEBUG = True
+batch_size = 1
 
 
-
-img_scale = (1080, 1920)  # height, width
+img_scale = (640, 640)  # height, width
 CLASSES = (
         "Car",
         "Bus",
@@ -25,7 +30,16 @@ model = dict(
     input_size=img_scale,
     random_size_range=(15, 25),
     random_size_interval=10,
-    backbone=dict(type='CSPDarknet', deepen_factor=0.33, widen_factor=0.5),
+
+    backbone=dict(
+        _delete_=True,
+        type='mmcls.RepVGG',
+        arch='yolox-pai-small',
+        add_ppf=True,
+        norm_cfg=dict(type='BN', eps=0.001, momentum=0.03),
+        out_indices=(1, 2, 3),
+    ),
+
     neck=dict(
         type='YOLOXPAFPN',
         in_channels=[128, 256, 512],
@@ -61,13 +75,13 @@ train_pipeline = [
     # According to the official implementation, multi-scale
     # training is not considered here but in the
     # 'mmdet/models/detectors/yolox.py'.
-    # dict(type='Resize', img_scale=img_scale, keep_ratio=True),
-    # dict(
-    #     type='Pad',
-    #     pad_to_square=True,
-    #     # If the image is three-channel, the pad value needs
-    #     # to be set separately for each channel.
-    #     pad_val=dict(img=(114.0, 114.0, 114.0))),
+    dict(type='Resize', img_scale=img_scale, keep_ratio=True),
+    dict(
+        type='Pad',
+        pad_to_square=True,
+        # If the image is three-channel, the pad value needs
+        # to be set separately for each channel.
+        pad_val=dict(img=(114.0, 114.0, 114.0))),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
@@ -95,21 +109,21 @@ test_pipeline = [
         img_scale=img_scale,
         flip=False,
         transforms=[
-            # dict(type='Resize', keep_ratio=True),
+            dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
-            # dict(
-            #     type='Pad',
-            #     pad_to_square=True,
-            #     pad_val=dict(img=(114.0, 114.0, 114.0))),
+            dict(
+                type='Pad',
+                pad_to_square=True,
+                pad_val=dict(img=(114.0, 114.0, 114.0))),
             dict(type='DefaultFormatBundle'),
             dict(type='Collect', keys=['img'])
         ])
 ]
 
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    persistent_workers=True,
+    samples_per_gpu=batch_size,
+    workers_per_gpu=0 if DEBUG else 2,
+    persistent_workers=False if DEBUG else True,
     train=train_dataset,
     val=dict(
         type=dataset_type,
@@ -168,13 +182,7 @@ custom_hooks = [
         type='ExpMomentumEMAHook',
         resume_from=resume_from,
         momentum=0.0001,
-        priority=49),
-    dict(
-        type="SimOTAVisualizeHook",
-    ),
-    dict(
-        type='BaseShowDataPipline',
-    )
+        priority=49)
 ]
 checkpoint_config = dict(interval=interval)
 evaluation = dict(
