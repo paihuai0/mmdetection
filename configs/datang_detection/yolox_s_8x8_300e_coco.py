@@ -62,12 +62,12 @@ train_pipeline = [
     # training is not considered here but in the
     # 'mmdet/models/detectors/yolox.py'.
     # dict(type='Resize', img_scale=img_scale, keep_ratio=True),
-    # dict(
-    #     type='Pad',
-    #     pad_to_square=True,
-    #     # If the image is three-channel, the pad value needs
-    #     # to be set separately for each channel.
-    #     pad_val=dict(img=(114.0, 114.0, 114.0))),
+    dict(
+        type='Pad',
+        pad_to_square=True,
+        # If the image is three-channel, the pad value needs
+        # to be set separately for each channel.
+        pad_val=dict(img=(114.0, 114.0, 114.0))),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
@@ -97,10 +97,10 @@ test_pipeline = [
         transforms=[
             # dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
-            # dict(
-            #     type='Pad',
-            #     pad_to_square=True,
-            #     pad_val=dict(img=(114.0, 114.0, 114.0))),
+            dict(
+                type='Pad',
+                pad_to_square=True,
+                pad_val=dict(img=(114.0, 114.0, 114.0))),
             dict(type='DefaultFormatBundle'),
             dict(type='Collect', keys=['img'])
         ])
